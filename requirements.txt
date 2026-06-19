@@ -1,0 +1,18 @@
+# --- Web UI ---
+streamlit>=1.33,<2
+
+# --- LLM backends ---
+anthropic>=0.40           # external API option (Claude)
+requests>=2.31            # talks to the local Ollama REST API
+
+# --- RAG / embeddings ---
+sentence-transformers>=2.6   # local embeddings (all-mpnet-base-v2, 768-dim) + optional cross-encoder reranker
+numpy>=1.24
+
+# --- Vector store (Postgres + pgvector, provisioned by docker-compose.yml) ---
+# The pgvector *extension* runs in Postgres; on the client we just send vector
+# literals, so only the psycopg2 driver is needed here.
+psycopg2-binary>=2.9
+
+# --- Config ---
+python-dotenv>=1.0

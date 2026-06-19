@@ -1,0 +1,22 @@
+services:
+  pgvector:
+    image: pgvector/pgvector:pg16
+    container_name: local-pgvector
+    restart: unless-stopped
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_USER=agent_user
+      - POSTGRES_PASSWORD=agent_pass
+      - POSTGRES_DB=agent_db
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U agent_user -d agent_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  pgdata:
+  
