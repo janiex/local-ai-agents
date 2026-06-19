@@ -93,6 +93,24 @@ ollama pull llama3.1        # or set OLLAMA_MODEL to another pulled model
 the sidebar field (session-only, not written to disk) or set `ANTHROPIC_API_KEY` in `.env`.
 
 ### 5. Run
+
+The easiest way is the helper script, which brings up the Docker VM, Postgres,
+and checks Ollama before launching the app (detached):
+
+```bash
+./run.sh start      # start services + app  → http://localhost:8501
+./run.sh status     # show state of every component
+./run.sh stop       # stop the app (services keep running)
+./run.sh restart    # stop then start the app
+./run.sh logs       # tail the app log
+./run.sh down       # stop the app AND the Postgres container
+```
+
+`PORT=8600 ./run.sh start` runs on a different port. The app log lives at
+`/tmp/local-ai-agents.streamlit.log`.
+
+Or run it directly (services must already be up):
+
 ```bash
 streamlit run app.py
 ```
