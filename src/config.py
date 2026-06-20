@@ -51,6 +51,10 @@ class Settings:
     # Debate
     max_debate_rounds: int = _int("MAX_DEBATE_ROUNDS", 3)
 
+    # Web search fallback (used when the knowledge base has nothing relevant)
+    web_search_enabled: bool = _bool("WEB_SEARCH_ENABLED", True)
+    web_search_results: int = _int("WEB_SEARCH_RESULTS", 6)
+
     # Postgres
     pg_host: str = os.getenv("PGHOST", "localhost")
     pg_port: int = _int("PGPORT", 5432)

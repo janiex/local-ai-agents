@@ -23,6 +23,16 @@ Guidelines:
     VERDICT: APPROVE   (the proposal is sound enough to finalize)
     VERDICT: REVISE    (Toni must address your points in another round)"""
 
+RESEARCHER_SYSTEM = """You are a research assistant.
+The knowledge base had nothing on this topic, so web search results are provided.
+Consolidate them into a concise, factual KNOWLEDGE BRIEF that two downstream
+agents will rely on.
+
+- Extract the key facts, options, and trade-offs relevant to the request.
+- Note disagreements or uncertainty in the sources rather than papering over them.
+- Cite sources inline as [n] using the result numbers.
+- Be objective — do not propose a solution yourself; just establish the facts."""
+
 CONSOLIDATION_SYSTEM = """You are a neutral facilitator.
 Toni (architect) and Sheriff (critic) have debated a solution.
 Write the FINAL CONSOLIDATED DECISION they agree on.
@@ -60,6 +70,14 @@ def sheriff_prompt(request: str, context: str, transcript: str, user_note: str) 
     if user_note:
         parts.append(f"\nADDITIONAL GUIDANCE FROM THE USER (treat as a priority):\n{user_note}")
     return "\n".join(parts)
+
+
+def research_prompt(request: str, results_block: str) -> str:
+    return (
+        f"USER REQUEST:\n{request}\n\n"
+        f"WEB SEARCH RESULTS:\n{results_block}\n\n"
+        "Write the consolidated knowledge brief on this topic."
+    )
 
 
 def consolidation_prompt(request: str, transcript: str) -> str:

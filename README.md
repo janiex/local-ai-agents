@@ -10,6 +10,9 @@ solution it produces*.
   **consolidate a final decision**.
 - The consolidated solution is **accumulated into the knowledge base** and **retrieved at
   the start** of future tasks.
+- **Web-search fallback:** if the knowledge base has nothing relevant for a topic, the
+  system runs a web search, consolidates the findings into a brief that feeds **both**
+  agents, and stores that brief as knowledge.
 
 The retrieval layer implements the hybrid design from
 [*Vector Search & Hybrid Retrieval for RAG* (InfoQ)](https://www.infoq.com/articles/vector-search-hybrid-retrieval-rag/):
@@ -130,8 +133,9 @@ streamlit run app.py
 ## Configuration
 
 All knobs live in `.env` (see `.env.example`): LLM provider/model, embedding model,
-rerank toggle, RRF constant (`RRF_K`), candidate/top-k counts, debate rounds, and Postgres
-connection. Most are also adjustable live in the sidebar.
+rerank toggle, RRF constant (`RRF_K`), candidate/top-k counts, debate rounds, web-search
+fallback (`WEB_SEARCH_ENABLED`, `WEB_SEARCH_RESULTS`), and Postgres connection. Most are
+also adjustable live in the sidebar.
 
 ---
 
@@ -144,8 +148,9 @@ scripts/init_db.py      one-time schema setup
 src/
   config.py             env-driven settings
   llm/                  provider abstraction (ollama, anthropic) + factory
-  rag/                  embeddings, chunking, pgvector store, hybrid retriever, KnowledgeBase
-  agents/               prompts + Toni/Sheriff debate orchestrator
+  rag/                  embeddings, chunking, pgvector store, hybrid retriever,
+                        web-search fallback, KnowledgeBase
+  agents/               prompts + Toni/Sheriff debate orchestrator (+ researcher step)
 ```
 
 ---
