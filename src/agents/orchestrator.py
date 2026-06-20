@@ -14,7 +14,9 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Any, Dict, Iterator, List, Optional
 
+from ..config import settings
 from ..llm.base import LLMProvider
+from ..rag import websearch
 from ..rag.knowledge import KnowledgeBase
 from . import prompts
 
@@ -35,27 +37,71 @@ class DebateController:
     max_rounds: int = 3
 
     context: str = ""
+    source: str = "none"      # where context came from: rag | web | none
     retrieved: List[Dict[str, Any]] = field(default_factory=list)
+    web_results: List[Dict[str, Any]] = field(default_factory=list)
     transcript: List[Turn] = field(default_factory=list)
     round: int = 0
-    status: str = "new"       # new | toni | sheriff | done
+    status: str = "new"       # new | research | toni | sheriff | done
     final_decision: str = ""
 
     # ---- setup -----------------------------------------------------------
     def start(self, rerank: Optional[bool] = None) -> List[Dict[str, Any]]:
-        """Retrieve accumulated knowledge for this task (the RAG 'beginning')."""
+        """Begin a task: retrieve accumulated knowledge, else fall back to web.
+
+        If the knowledge base has relevant chunks, use them. Otherwise run a web
+        search; a researcher step (`research_turn`) will consolidate the results
+        into a brief that feeds both agents.
+        """
         self.retrieved = self.kb.retrieve(self.request, rerank=rerank)
-        self.context = self.kb.format_context(self.retrieved)
+        if self.retrieved:
+            self.context = self.kb.format_context(self.retrieved)
+            self.source = "rag"
+            self.round = 1
+            self.status = "toni"
+            return self.retrieved
+
+        # Nothing in the KB — try the web.
+        if settings.web_search_enabled:
+            self.web_results = websearch.search(self.request)
+        if self.web_results:
+            self.source = "web"
+            self.status = "research"   # research_turn() builds the context next
+        else:
+            self.source = "none"
+            self.context = ""
+            self.round = 1
+            self.status = "toni"
+        return self.retrieved
+
+    # ---- research (web fallback) ----------------------------------------
+    def research_turn(self) -> Iterator[str]:
+        """Consolidate web results into a knowledge brief, shared by both agents."""
+        results_block = websearch.format_results(self.web_results)
+        prompt = prompts.research_prompt(self.request, results_block)
+        buf = []
+        for chunk in self.provider.stream(
+            prompts.RESEARCHER_SYSTEM, [{"role": "user", "content": prompt}]
+        ):
+            buf.append(chunk)
+            yield chunk
+        brief = "".join(buf)
+        self.context = brief
+        self.transcript.append(Turn("researcher", 0, brief))
+        try:
+            self.kb.accumulate_research(self.request, brief, self.web_results)
+        except Exception:
+            pass  # storing research is best-effort; never block the debate
         self.round = 1
         self.status = "toni"
-        return self.retrieved
 
     # ---- transcript rendering -------------------------------------------
     def _render_transcript(self) -> str:
         lines = []
+        labels = {"researcher": "RESEARCH BRIEF", "toni": "TONI",
+                  "sheriff": "SHERIFF", "final": "FINAL"}
         for t in self.transcript:
-            label = {"toni": "TONI", "sheriff": "SHERIFF", "final": "FINAL"}[t.agent]
-            lines.append(f"--- {label} (round {t.round}) ---\n{t.content}")
+            lines.append(f"--- {labels[t.agent]} (round {t.round}) ---\n{t.content}")
         return "\n\n".join(lines)
 
     # ---- agent turns (generators that stream) ----------------------------

@@ -14,7 +14,7 @@ from src.config import settings
 from src.llm import available_providers, get_provider
 from src.agents import DebateController
 
-AVATARS = {"toni": "🧠", "sheriff": "🤠", "final": "🤝"}
+AVATARS = {"researcher": "🔎", "toni": "🧠", "sheriff": "🤠", "final": "🤝"}
 
 st.set_page_config(page_title="Toni & Sheriff — RAG agents", page_icon="🤖", layout="wide")
 
@@ -147,24 +147,37 @@ with top:
         reset_task()
         st.rerun()
 
-# Retrieved knowledge
-with st.expander(f"📚 Accumulated knowledge used ({len(ctrl.retrieved)} chunks)",
-                 expanded=not ctrl.transcript):
-    if not ctrl.retrieved:
-        st.write("No prior knowledge yet — this is a fresh topic.")
-    for i, r in enumerate(ctrl.retrieved, 1):
-        meta = r.get("metadata") or {}
-        score = r.get("rerank_score", r.get("rrf_score", 0))
-        st.markdown(f"**K{i}** · _{meta.get('request', r.get('doc_id',''))}_ · score `{score:.4f}`")
-        st.caption(r["content"][:500] + ("…" if len(r["content"]) > 500 else ""))
+# Knowledge / sources panel
+if ctrl.source == "web":
+    title = f"🔎 Web search (KB had nothing — {len(ctrl.web_results)} results)"
+elif ctrl.source == "rag":
+    title = f"📚 Accumulated knowledge used ({len(ctrl.retrieved)} chunks)"
+else:
+    title = "📭 No knowledge found (fresh topic, web search unavailable)"
+
+with st.expander(title, expanded=not ctrl.transcript):
+    if ctrl.source == "rag":
+        for i, r in enumerate(ctrl.retrieved, 1):
+            meta = r.get("metadata") or {}
+            score = r.get("rerank_score", r.get("rrf_score", 0))
+            st.markdown(f"**K{i}** · _{meta.get('request', r.get('doc_id',''))}_ · score `{score:.4f}`")
+            st.caption(r["content"][:500] + ("…" if len(r["content"]) > 500 else ""))
+    elif ctrl.source == "web":
+        st.caption("The knowledge base was empty for this topic, so these web results "
+                   "are consolidated into a brief shared by both agents.")
+        for i, r in enumerate(ctrl.web_results, 1):
+            st.markdown(f"**[{i}] [{r['title'] or r['url']}]({r['url']})**")
+            st.caption((r["body"] or "")[:300] + ("…" if len(r["body"]) > 300 else ""))
+    else:
+        st.write("No prior knowledge and no web results — the agents reason from scratch.")
 
 st.divider()
 
 # Render the transcript accumulated so far
 for t in ctrl.transcript:
     with st.chat_message(t.agent, avatar=AVATARS[t.agent]):
-        label = {"toni": "Toni (architect)", "sheriff": "Sheriff (critic)",
-                 "final": "Consolidated decision"}[t.agent]
+        label = {"researcher": "Research brief (web)", "toni": "Toni (architect)",
+                 "sheriff": "Sheriff (critic)", "final": "Consolidated decision"}[t.agent]
         st.markdown(f"**{label}** · round {t.round}")
         st.markdown(t.content)
         if t.verdict:
@@ -174,7 +187,20 @@ for t in ctrl.transcript:
 # --------------------------------------------------------------------------
 # Controls / next step
 # --------------------------------------------------------------------------
-if ctrl.status in ("toni", "sheriff"):
+if ctrl.status == "research":
+    st.info("The knowledge base had nothing on this topic — researching it on the web "
+            "to brief both agents.")
+    if st.button("🔎 Run web research", type="primary"):
+        try:
+            with st.chat_message("researcher", avatar=AVATARS["researcher"]):
+                st.markdown("**Research brief (web)**")
+                st.write_stream(ctrl.research_turn())
+        except Exception as e:  # noqa: BLE001
+            st.error(f"LLM error during research: {e}")
+            st.stop()
+        st.rerun()
+
+elif ctrl.status in ("toni", "sheriff"):
     note = st.text_area(
         "💬 Optional guidance to inject into this round",
         key=f"note_{ctrl.round}",
