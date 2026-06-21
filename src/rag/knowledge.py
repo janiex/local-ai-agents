@@ -63,22 +63,5 @@ class KnowledgeBase:
             },
         )
 
-    def accumulate_research(self, request: str, brief: str,
-                            sources: List[Dict[str, Any]] = None) -> Dict[str, Any]:
-        """Persist a web-research brief as reusable knowledge."""
-        timestamp = _dt.datetime.utcnow().isoformat()
-        body = (
-            f"# Web-research brief\n\n"
-            f"## Topic\n{request}\n\n"
-            f"## Consolidated findings\n{brief}\n"
-        )
-        if sources:
-            urls = "\n".join(f"- {s.get('url','')}" for s in sources if s.get("url"))
-            body += f"\n## Sources\n{urls}\n"
-        return self.add_document(
-            body,
-            metadata={"type": "web_research", "request": request, "created_at": timestamp},
-        )
-
     def stats(self) -> Dict[str, Any]:
         return store.stats()

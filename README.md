@@ -128,7 +128,9 @@ streamlit run app.py
 2. Click **Run round** to watch Toni propose and Sheriff critique (streamed live). Add
    **optional guidance** before any round to steer the discussion.
 3. When Sheriff approves (or rounds run out), click **Consolidate** for the final decision.
-4. Click **Save to knowledge base** to accumulate the solution for future tasks.
+4. Click **Save to knowledge base** to accumulate this session's knowledge for future
+   tasks. This is **explicit and opt-in** — nothing from the session (including any web
+   research brief) is written to the RAG store unless you press this button.
 
 ---
 
@@ -176,18 +178,4 @@ src/
   rag/                  embeddings, chunking, pgvector store, hybrid retriever,
                         web-search fallback, secure URL ingestion, KnowledgeBase
   agents/               prompts + Toni/Sheriff debate orchestrator (+ researcher step)
-```
-
----
-
-## Pushing to GitHub
-
-`.env`, `.venv/`, and `__pycache__/` are gitignored. To publish:
-
-```bash
-git add .
-git commit -m "Toni & Sheriff: two-agent hybrid-RAG system"
-git branch -M main
-git remote add origin <your-repo-url>
-git push -u origin main
 ```

@@ -266,8 +266,10 @@ elif ctrl.final_decision:
             reset_task()
             st.rerun()
     else:
-        st.markdown("### Accumulate this solution?")
-        st.caption("Stores the consolidated decision as reusable RAG knowledge.")
+        st.markdown("### Add this session's knowledge to the RAG store?")
+        st.caption("Explicit, opt-in: nothing from this session is saved unless you click below. "
+                   "Stores the consolidated decision plus the debate summary (including any web "
+                   "research brief) as reusable knowledge.")
         c1, c2 = st.columns(2)
         if c1.button("💾 Save to knowledge base", type="primary"):
             with st.spinner("Embedding & storing…"):
