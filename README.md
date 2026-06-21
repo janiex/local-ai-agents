@@ -13,6 +13,8 @@ solution it produces*.
 - **Web-search fallback:** if the knowledge base has nothing relevant for a topic, the
   system runs a web search, consolidates the findings into a brief that feeds **both**
   agents, and stores that brief as knowledge.
+- **Ingest a URL:** paste a link in the sidebar to digest a page's text into the KB,
+  through a hardened fetcher (see [Security](#security)).
 
 The retrieval layer implements the hybrid design from
 [*Vector Search & Hybrid Retrieval for RAG* (InfoQ)](https://www.infoq.com/articles/vector-search-hybrid-retrieval-rag/):
@@ -130,11 +132,34 @@ streamlit run app.py
 
 ---
 
+## Security
+
+URL ingestion fetches a **user-supplied, untrusted** URL, so [src/rag/url_ingest.py](src/rag/url_ingest.py)
+applies defence-in-depth against SSRF and abuse:
+
+- **Scheme allowlist** — only `http`/`https` (blocks `file://`, `gopher://`, `data:`, …).
+- **No embedded credentials** (`user:pass@host` rejected).
+- **SSRF / private-network blocking** — the host is DNS-resolved and **every** resolved
+  address must be public; loopback, private, link-local (incl. the `169.254.169.254`
+  cloud-metadata endpoint), multicast, and reserved ranges are refused.
+- **Redirects followed manually**, re-validating the target host on **every hop**.
+- **Limits** — connect/read timeouts and a hard, streamed response-size cap.
+- **Content-Type allowlist** — text/HTML/plain only.
+- **Text-only handling** — HTML is parsed to text with scripts/styles removed; content is
+  never rendered or executed, only stored as text.
+- Optional **host allowlist** via `URL_INGEST_ALLOW_HOSTS` for a locked-down deployment.
+
+Residual risk: DNS rebinding between validation and connect isn't fully eliminated;
+private-range blocking covers the primary SSRF vector, and the host allowlist closes it
+when needed. API keys live in `.env`/UI session state only and are never committed.
+
 ## Configuration
 
 All knobs live in `.env` (see `.env.example`): LLM provider/model, embedding model,
 rerank toggle, RRF constant (`RRF_K`), candidate/top-k counts, debate rounds, web-search
-fallback (`WEB_SEARCH_ENABLED`, `WEB_SEARCH_RESULTS`), and Postgres connection. Most are
+fallback (`WEB_SEARCH_ENABLED`, `WEB_SEARCH_RESULTS`), URL ingestion
+(`URL_INGEST_ENABLED`, `URL_INGEST_MAX_BYTES`, `URL_INGEST_TIMEOUT`,
+`URL_INGEST_MAX_REDIRECTS`, `URL_INGEST_ALLOW_HOSTS`), and Postgres connection. Most are
 also adjustable live in the sidebar.
 
 ---
@@ -149,7 +174,7 @@ src/
   config.py             env-driven settings
   llm/                  provider abstraction (ollama, anthropic) + factory
   rag/                  embeddings, chunking, pgvector store, hybrid retriever,
-                        web-search fallback, KnowledgeBase
+                        web-search fallback, secure URL ingestion, KnowledgeBase
   agents/               prompts + Toni/Sheriff debate orchestrator (+ researcher step)
 ```
 

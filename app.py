@@ -13,6 +13,7 @@ import streamlit as st
 from src.config import settings
 from src.llm import available_providers, get_provider
 from src.agents import DebateController
+from src.rag import url_ingest
 
 AVATARS = {"researcher": "🔎", "toni": "🧠", "sheriff": "🤠", "final": "🤝"}
 
@@ -70,6 +71,28 @@ with st.sidebar:
     )
     top_k = st.slider("Top-k context chunks", 1, 15, settings.retrieval_top_k)
     max_rounds = st.slider("Max debate rounds", 1, 6, settings.max_debate_rounds)
+
+    st.divider()
+    with st.expander("📥 Ingest a URL into the KB"):
+        st.caption(
+            "Fetches a web page and stores its text as knowledge. Only http/https, "
+            "public hosts, text content, size-capped — private/internal addresses are blocked."
+        )
+        url_in = st.text_input("URL", placeholder="https://example.com/article", key="ingest_url")
+        if st.button("📥 Fetch & ingest", disabled=not settings.url_ingest_enabled):
+            if not url_in.strip():
+                st.warning("Enter a URL first.")
+            else:
+                try:
+                    with st.spinner("Fetching & ingesting securely…"):
+                        res = url_ingest.ingest_url(get_kb(), url_in)
+                    get_kb.clear()  # refresh cached stats
+                    st.success(f"Ingested “{res['title'][:60]}” — "
+                               f"{res['chunks']} chunks ({res['chars']} chars).")
+                except url_ingest.URLSecurityError as e:
+                    st.error(f"Blocked: {e}")
+                except Exception as e:  # noqa: BLE001
+                    st.error(f"Ingestion failed: {e}")
 
     st.divider()
     if st.button("🔌 Test backends"):
