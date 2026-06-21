@@ -2,13 +2,15 @@
 #
 # run.sh — start / stop / manage the Toni & Sheriff app and its services.
 #
-#   ./run.sh start      Bring up Docker (colima) + Postgres, check Ollama,
-#                       then launch the Streamlit app (detached).
+#   ./run.sh start      Start Docker VM (colima), Postgres and Ollama (each only
+#                       if needed), then launch the Streamlit app (detached).
 #   ./run.sh stop       Stop the Streamlit app (leaves services running).
 #   ./run.sh restart    Stop then start the app.
 #   ./run.sh status      Show the state of every component.
 #   ./run.sh logs        Tail the app log.
 #   ./run.sh down        Stop the app AND the Postgres container.
+#   ./run.sh shutdown    Full teardown — symmetric to start: stop the app,
+#                       Postgres, the Docker VM (colima) AND Ollama.
 #
 # Env overrides:  PORT (default 8501)
 #
@@ -115,15 +117,28 @@ status() {
   if [ -n "$(app_pid)" ]; then c_green "  Streamlit app:      running ($URL, pid $(app_pid))"; else c_red "  Streamlit app:      stopped"; fi
 }
 
+shutdown() {
+  # Symmetric counterpart to `start`: tear everything down.
+  stop
+  c_yellow "Stopping Postgres…"
+  docker compose down 2>/dev/null || true
+  c_yellow "Stopping Docker VM (colima)…"
+  colima stop 2>/dev/null || true
+  c_yellow "Stopping Ollama…"
+  brew services stop ollama >/dev/null 2>&1 || true
+  c_green "All components stopped."
+}
+
 case "${1:-}" in
-  start)   start ;;
-  stop)    stop ;;
-  restart) stop; sleep 1; start ;;
-  status)  status ;;
-  logs)    tail -f "$LOG" ;;
-  down)    stop; c_yellow "Stopping Postgres…"; docker compose down ;;
+  start)    start ;;
+  stop)     stop ;;
+  restart)  stop; sleep 1; start ;;
+  status)   status ;;
+  logs)     tail -f "$LOG" ;;
+  down)     stop; c_yellow "Stopping Postgres…"; docker compose down ;;
+  shutdown) shutdown ;;
   *)
-    echo "Usage: ./run.sh {start|stop|restart|status|logs|down}"
+    echo "Usage: ./run.sh {start|stop|restart|status|logs|down|shutdown}"
     exit 1
     ;;
 esac

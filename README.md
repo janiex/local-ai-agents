@@ -109,7 +109,11 @@ and checks Ollama before launching the app (detached):
 ./run.sh restart    # stop then start the app
 ./run.sh logs       # tail the app log
 ./run.sh down       # stop the app AND the Postgres container
+./run.sh shutdown   # full teardown: app + Postgres + Docker VM (colima) + Ollama
 ```
+
+`start` brings up the Docker VM (colima), Postgres, and Ollama (each only if needed)
+before launching the app, so `start` / `shutdown` are symmetric.
 
 `PORT=8600 ./run.sh start` runs on a different port. The app log lives at
 `/tmp/local-ai-agents.streamlit.log`.
