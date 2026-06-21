@@ -88,10 +88,9 @@ class DebateController:
         brief = "".join(buf)
         self.context = brief
         self.transcript.append(Turn("researcher", 0, brief))
-        try:
-            self.kb.accumulate_research(self.request, brief, self.web_results)
-        except Exception:
-            pass  # storing research is best-effort; never block the debate
+        # Nothing is persisted here — the brief stays in-session and is only
+        # written to the KB if the user later clicks "Save to knowledge base"
+        # (it is captured in the saved transcript summary).
         self.round = 1
         self.status = "toni"
 
