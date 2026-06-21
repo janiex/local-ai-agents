@@ -55,6 +55,14 @@ class Settings:
     web_search_enabled: bool = _bool("WEB_SEARCH_ENABLED", True)
     web_search_results: int = _int("WEB_SEARCH_RESULTS", 6)
 
+    # Secure URL ingestion (digest a link into the knowledge base)
+    url_ingest_enabled: bool = _bool("URL_INGEST_ENABLED", True)
+    url_ingest_max_bytes: int = _int("URL_INGEST_MAX_BYTES", 2_000_000)
+    url_ingest_timeout: int = _int("URL_INGEST_TIMEOUT", 15)
+    url_ingest_max_redirects: int = _int("URL_INGEST_MAX_REDIRECTS", 3)
+    # Optional comma-separated host allowlist; empty = any public host allowed.
+    url_ingest_allow_hosts: str = os.getenv("URL_INGEST_ALLOW_HOSTS", "")
+
     # Postgres
     pg_host: str = os.getenv("PGHOST", "localhost")
     pg_port: int = _int("PGPORT", 5432)
