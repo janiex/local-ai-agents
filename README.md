@@ -16,6 +16,9 @@ solution it produces*.
 - **Ingest a URL:** paste a link in the sidebar to digest a page's text into the KB,
   through a hardened fetcher (see [Security](#security)).
 
+> 📚 **Learning this codebase?** A full hands-on training course (9 modules + capstone, with
+> labs and graded checkpoints) lives in [docs/training/](docs/training/README.md).
+
 The retrieval layer implements the hybrid design from
 [*Vector Search & Hybrid Retrieval for RAG* (InfoQ)](https://www.infoq.com/articles/vector-search-hybrid-retrieval-rag/):
 **dense (semantic) + sparse (keyword) search fused with Reciprocal Rank Fusion (RRF)**,
